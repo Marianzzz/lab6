@@ -50,11 +50,3 @@ class ChatBot:
         else:
             return "На жаль, не вдалося знайти відповіді на цю тему.", "bot"
 
-    @staticmethod
-    def add_subscriber(subscriber):
-        ChatBot._subscribers.append(subscriber)
-
-    @staticmethod
-    def notify_subscribers(message):
-        for subscriber in ChatBot._subscribers:
-            subscriber.update(message)

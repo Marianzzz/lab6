@@ -1,17 +1,14 @@
-from flask import Flask, request, jsonify, render_template
-from patterns import observer
-from patterns.strategy import BasicMessageProcessingStrategy, AdvancedMessageProcessingStrategy
+from flask import Blueprint, request, jsonify, render_template
+from app.chatbot import ChatBot
+from app.patterns.strategy import BasicMessageProcessingStrategy, AdvancedMessageProcessingStrategy
 
-from patterns.singleton import ChatBot
+main_bp = Blueprint('main', __name__)
 
-app = Flask(__name__)
-
-@app.route('/')
+@main_bp.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/message', methods=['POST'])
-
+@main_bp.route('/message', methods=['POST'])
 def receive_message():
     data = request.get_json()
     user_message = data['message']
@@ -35,6 +32,3 @@ def get_processing_strategy(data):
 def get_message_type(data):
     message_type = data.get('message_type')
     return message_type if message_type in ['user', 'bot'] else 'user'
-
-if __name__ == '__main__':
-    app.run(debug=True)

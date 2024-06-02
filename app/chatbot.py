@@ -1,6 +1,34 @@
 import random
 import os
 
+
+class Subscriber:
+    def update(self, message, message_type):
+        pass
+
+
+class BotSubscriber(Subscriber):
+    def update(self, message, message_type):
+        from app.chatbot import ChatBot
+        bot_response = ChatBot.get_instance().respond_to_message(message)
+        return bot_response, message_type
+
+
+class MessageProcessingStrategy:
+    def process_message(self, message):
+        pass
+
+
+class BasicMessageProcessingStrategy(MessageProcessingStrategy):
+    def process_message(self, message):
+        pass
+
+
+class AdvancedMessageProcessingStrategy(MessageProcessingStrategy):
+    def process_message(self, message):
+        pass
+
+
 class MessageHandler:
     def __init__(self, keyword):
         self.keyword = keyword
@@ -20,21 +48,45 @@ class MessageHandler:
     def handle(self, message):
         pass
 
+
 class GreetingHandler(MessageHandler):
     def handle(self, message):
         return "Привіт! Я чат-бот. Як я можу вам допомогти?", "bot"
+
 
 class Topic1Handler(MessageHandler):
     def handle(self, message):
         return ChatBot.get_instance().get_response_from_file('topic1'), "bot"
 
+
 class Topic2Handler(MessageHandler):
     def handle(self, message):
         return ChatBot.get_instance().get_response_from_file('topic2'), "bot"
 
+
 class DefaultHandler(MessageHandler):
     def handle(self, message):
         return "Ви сказали: " + message, "user"
+
+
+
+
+class Notifier:
+    def __init__(self):
+        self._subscribers = []
+
+    def subscribe(self, subscriber):
+        self._subscribers.append(subscriber)
+
+    def unsubscribe(self, subscriber):
+        self._subscribers.remove(subscriber)
+
+    def notify(self, message, message_type):
+        responses = []
+        for subscriber in self._subscribers:
+            responses.append(subscriber.update(message, message_type))
+        return responses
+
 
 class ChatBot:
     _instance = None
@@ -48,13 +100,24 @@ class ChatBot:
     def __init__(self):
         self.responses_folder = "responses"
         self._asked_questions = set()
-        self.message_handler = GreetingHandler('привіт')
-        self.message_handler.set_next_handler(Topic1Handler('тема 1'))
-        Topic1Handler('тема 1').set_next_handler(Topic2Handler('тема 2'))
-        Topic2Handler('тема 2').set_next_handler(DefaultHandler('default'))
 
-    def respond_to_message(self, message):
+        # Use the factory to create handlers
+        greeting_handler = HandlerFactory.create_handler('greeting', 'привіт')
+        topic1_handler = HandlerFactory.create_handler('topic1', 'тема 1')
+        topic2_handler = HandlerFactory.create_handler('topic2', 'тема 2')
+        default_handler = HandlerFactory.create_handler('default', 'default')
+
+        # Set up the chain of responsibility
+        greeting_handler.set_next_handler(topic1_handler)
+        topic1_handler.set_next_handler(topic2_handler)
+        topic2_handler.set_next_handler(default_handler)
+
+        self.message_handler = greeting_handler
+        self.notifier = Notifier()
+
+    def respond_to_message(self, message, message_type='user'):
         response, message_type = self.message_handler.handle_message(message)
+        self.notifier.notify(message, message_type)
         return response
 
     def get_response_from_file(self, topic):
